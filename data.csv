@@ -1,7 +1,20 @@
-分类,子分类,名称,网址,描述,图标
-搜索引擎,国内,百度,https://www.baidu.com,百度一下,🔍
-搜索引擎,国内,搜狗,https://www.sogou.com,搜狗搜索,🐕
-搜索引擎,国际,Google,https://google.com,谷歌搜索,🔍
-搜索引擎,国际,Bing,https://bing.com,微软必应,🌐
-开发,前端,MDN,https://developer.mozilla.org,Web 文档,📖
-开发,前端,CodePen,https://codepen.io,在线演示,🎨
+名称,网址,描述,图标,类别1,类别2,类别3,类别4,类别5
+百度,https://www.baidu.com,百度一下,🔍,工具,搜索引擎,国内
+搜狗,https://www.sogou.com,搜狗搜索,🐕,工具,搜索引擎,国内
+Google,https://google.com,谷歌搜索,🔍,工具,搜索引擎,国际
+Bing,https://bing.com,微软必应,🌐,工具,搜索引擎,国际
+React,https://reactjs.org,用于构建用户界面的JavaScript库,⚛️,开发,前端,框架
+Vue.js,https://vuejs.org,渐进式JavaScript框架,🟢,开发,前端,框架
+Angular,https://angular.io,平台和框架，用于构建SPA,🅰️,开发,前端,框架
+MySQL,https://www.mysql.com,开源关系型数据库,🐬,开发,后端,数据库
+PostgreSQL,https://www.postgresql.org,强大的开源对象关系数据库,éléphant,开发,后端,数据库
+MongoDB,https://www.mongodb.com,面向文档的NoSQL数据库,🍃,开发,后端,数据库
+AWS,https://aws.amazon.com,亚马逊云服务,☁️,开发,后端,云服务
+Azure,https://azure.microsoft.com,微软云服务,⬜,开发,后端,云服务
+阿里云,https://www.aliyun.com,阿里巴巴云计算,🟥,开发,后端,云服务
+Fluent Icons,https://react-icons.github.io,微软Fluent设计图标,🔷,设计,UI资源,图标库
+Heroicons,https://heroicons.com,高质量SVG图标,🦸,设计,UI资源,图标库
+Feather,https://feathericons.com,简单漂亮的开源图标,✒️,设计,UI资源,图标库
+Python,https://www.python.org,高级编程语言,🐍,学习,编程语言
+JavaScript,https://developer.mozilla.org,Web开发语言,JS,学习,编程语言
+Java,https://www.java.com,面向对象编程语言,☕,学习,编程语言

@@ -3,13 +3,18 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <meta name="description" content="CSV 驱动的静态导航站，支持多级分类、夜间模式，毛玻璃界面。"/>
-  <title>CSV 导航站 - 毛玻璃&夜间模式</title>
+  <meta name="description" content="CSV 驱动的静态导航站，支持多级分类、夜间模式，现代扁平化界面。"/>
+  <title>现代导航站 - 扁平化设计</title>
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
+<div id="loading" class="loading-overlay">
+  <div class="spinner"></div>
+  <p>加载中...</p>
+</div>
+
 <header>
-  <h1>CSV 导航站</h1>
+  <h1>现代导航站</h1>
   <button id="themeBtn" aria-label="切换夜间模式">🌙</button>
 </header>
 
@@ -30,9 +35,12 @@ themeBtn.addEventListener('click', () => {
   body.classList.toggle('dark');
   localStorage.setItem('theme', body.classList.contains('dark') ? 'dark' : '');
   themeBtn.textContent = body.classList.contains('dark') ? '☀️' : '🌙';
+  // 添加按钮点击动画
+  themeBtn.classList.add('rotating');
+  setTimeout(() => themeBtn.classList.remove('rotating'), 300);
 });
 
-/* ===== CSV 解析 ===== */
+/* ===== CSV 解析（支持多级分类） ===== */
 async function loadCSV() {
   const text = await fetch('data.csv').then(r => r.text());
   const lines = text.trim().split('\n');
@@ -42,29 +50,63 @@ async function loadCSV() {
     return headers.reduce((obj, h, i) => (obj[h] = vals[i], obj), {});
   });
 
-  // 转成嵌套结构
-  const map = {};
+  // 构建分类树结构
+  const root = { name: 'root', children: {}, sites: [] };
+  
   for (const row of data) {
-    const { 分类, 子分类, 名称, 网址, 描述, 图标 } = row;
-    if (!map[分类]) map[分类] = { name: 分类, children: {} };
-    if (!map[分类].children[子分类]) map[分类].children[子分类] = { name: 子分类, sites: [] };
-    map[分类].children[子分类].sites.push({ name: 名称, url: 网址, desc: 描述, icon: 图标 });
+    const { 名称, 网址, 描述, 图标, 类别1, 类别2, 类别3, 类别4, 类别5 } = row;
+    
+    // 只处理包含站点信息的行
+    if (名称 && 网址) {
+      // 构建分类路径
+      const categories = [类别1, 类别2, 类别3, 类别4, 类别5].filter(cat => cat && cat.trim() !== '');
+      
+      // 导航到对应分类节点
+      let currentNode = root;
+      for (const category of categories) {
+        if (!currentNode.children[category]) {
+          currentNode.children[category] = { 
+            name: category, 
+            children: {}, 
+            sites: [] 
+          };
+        }
+        currentNode = currentNode.children[category];
+      }
+      
+      // 添加站点到最终分类
+      currentNode.sites.push({ 
+        name: 名称, 
+        url: 网址, 
+        desc: 描述, 
+        icon: 图标 
+      });
+    }
   }
-  // 转数组
-  return Object.values(map).map(cat => ({
-    name: cat.name,
-    children: Object.values(cat.children)
-  }));
+  
+  // 转换为数组结构
+  function convertToArray(node) {
+    if (!node.children) return [];
+    
+    return Object.values(node.children).map(child => {
+      return {
+        name: child.name,
+        children: convertToArray(child),
+        sites: child.sites || []
+      };
+    });
+  }
+  
+  return convertToArray(root);
 }
 
-/* ===== 递归树（仅一级箭头） ===== */
+/* ===== 递归树（移除箭头） ===== */
 function buildTree(arr, parentKey = '', level = 0) {
   let html = '';
   arr.forEach((node, idx) => {
     const key = parentKey ? `${parentKey}-${idx}` : `${idx}`;
     const hasSub = node.children && node.children.length;
     const hasSites = node.sites && node.sites.length;
-    const isParent = hasSub || hasSites;
 
     html += `
       <div class="nav-item">
@@ -76,7 +118,6 @@ function buildTree(arr, parentKey = '', level = 0) {
              ${hasSites ? `data-sites='${JSON.stringify(node.sites)}'` : ''}>
           <span class="nav-icon">📁</span>
           <span>${node.name}</span>
-          ${level === 0 && isParent ? '<span class="nav-arrow">→</span>' : ''}
         </div>`;
 
     if (hasSub) {
@@ -93,7 +134,10 @@ function buildTree(arr, parentKey = '', level = 0) {
 function showSites(title, sites) {
   document.getElementById('subTitle').textContent = title;
   const box = document.getElementById('list');
-  if (!sites.length) { box.innerHTML = '<p style="color:#999">暂无站点</p>'; return; }
+  if (!sites.length) { 
+    box.innerHTML = '<p style="color:#999;text-align:center;width:100%;">暂无站点</p>'; 
+    return; 
+  }
   box.innerHTML = sites.map(s => `
     <a class="site-card" href="${s.url}" target="_blank" rel="noopener">
       <div class="site-icon">${s.icon || '🌐'}</div>
@@ -103,19 +147,28 @@ function showSites(title, sites) {
 }
 
 /* ===== 入口 ===== */
+// 显示加载动画
+const loadingOverlay = document.getElementById('loading');
+
 loadCSV().then(data => {
   document.getElementById('side').innerHTML = buildTree(data);
+  // 隐藏加载动画
+  loadingOverlay.classList.add('hidden');
 
   document.getElementById('side').addEventListener('click', e => {
     const row = e.target.closest('.nav-row');
     if (!row) return;
 
     /* 一级折叠/展开 */
-    const arrow = row.querySelector('.nav-arrow');
-    if (arrow) {
-      const children = row.nextElementSibling;
-      children?.classList.toggle('open');
-      arrow.classList.toggle('expanded');
+    const children = row.nextElementSibling;
+    if (children && children.classList.contains('nav-children')) {
+      children.classList.toggle('open');
+      // 添加展开动画
+      if (children.classList.contains('open')) {
+        children.style.maxHeight = children.scrollHeight + 'px';
+      } else {
+        children.style.maxHeight = '0';
+      }
     }
 
     /* 选中并展示右侧 */
