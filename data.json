@@ -1,0 +1,33 @@
+[
+  {
+    "name": "搜索引擎",
+    "children": [
+      {
+        "name": "国内",
+        "sites": [
+          {"name":"百度","url":"https://www.baidu.com","desc":"百度一下","icon":"🔍"},
+          {"name":"搜狗","url":"https://www.sogou.com","desc":"搜狗搜索","icon":"🐕"}
+        ]
+      },
+      {
+        "name": "国际",
+        "sites": [
+          {"name":"Google","url":"https://google.com","desc":"谷歌搜索","icon":"🔍"},
+          {"name":"Bing","url":"https://bing.com","desc":"微软必应","icon":"🌐"}
+        ]
+      }
+    ]
+  },
+  {
+    "name": "开发",
+    "children": [
+      {
+        "name": "前端",
+        "sites": [
+          {"name":"MDN","url":"https://developer.mozilla.org","desc":"Web 文档","icon":"📖"},
+          {"name":"CodePen","url":"https://codepen.io","desc":"在线演示","icon":"🎨"}
+        ]
+      }
+    ]
+  }
+]
