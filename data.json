@@ -1,0 +1,14 @@
+[
+    {
+        "分类": "编程",
+        "站点名称": "StackOverflow",
+        "站点地址": "https://stackoverflow.com",
+        "站点说明": "编程问答社区"
+    },
+    {
+        "分类": "游戏",
+        "站点名称": "Steam",
+        "站点地址": "https://store.steampowered.com",
+        "站点说明": "游戏商店"
+    }
+]
