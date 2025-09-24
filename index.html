@@ -3,14 +3,13 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <meta name="description" content="简洁美观的静态导航站，支持多级分类、夜间模式，纯前端托管即可使用。"/>
-  <meta name="keywords" content="导航,静态站,多级分类,夜间模式,SEO友好"/>
-  <title>静态导航站 - 多级分类·夜间模式</title>
+  <meta name="description" content="CSV 驱动的静态导航站，支持多级分类、夜间模式，毛玻璃界面。"/>
+  <title>CSV 导航站 - 毛玻璃&夜间模式</title>
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 <header>
-  <h1>静态导航站</h1>
+  <h1>CSV 导航站</h1>
   <button id="themeBtn" aria-label="切换夜间模式">🌙</button>
 </header>
 
@@ -18,36 +17,54 @@
   <nav id="side"></nav>
   <section>
     <h2 id="subTitle">请选择分类</h2>
-    <div id="list"></div>
+    <div id="list" class="site-grid"></div>
   </section>
 </main>
 
 <script>
 /* ===== 夜间模式 ===== */
-const themeBtn = document.getElementById('themeBtn');
 const body = document.body;
-
-// 初始化
-if (localStorage.getItem('theme') === 'dark') {
-  body.classList.add('dark');
-  themeBtn.textContent = '☀️';
-}
-
+const themeBtn = document.getElementById('themeBtn');
+if (localStorage.getItem('theme') === 'dark') body.classList.add('dark');
 themeBtn.addEventListener('click', () => {
   body.classList.toggle('dark');
-  const isDark = body.classList.contains('dark');
-  localStorage.setItem('theme', isDark ? 'dark' : '');
-  themeBtn.textContent = isDark ? '☀️' : '🌙';
+  localStorage.setItem('theme', body.classList.contains('dark') ? 'dark' : '');
+  themeBtn.textContent = body.classList.contains('dark') ? '☀️' : '🌙';
 });
 
-/* ===== 递归树（无箭头） ===== */
-function buildTree(arr, parentKey = '', pathNames = [], level = 0) {
+/* ===== CSV 解析 ===== */
+async function loadCSV() {
+  const text = await fetch('data.csv').then(r => r.text());
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',');
+  const data = lines.slice(1).map(l => {
+    const vals = l.split(',');
+    return headers.reduce((obj, h, i) => (obj[h] = vals[i], obj), {});
+  });
+
+  // 转成嵌套结构
+  const map = {};
+  for (const row of data) {
+    const { 分类, 子分类, 名称, 网址, 描述, 图标 } = row;
+    if (!map[分类]) map[分类] = { name: 分类, children: {} };
+    if (!map[分类].children[子分类]) map[分类].children[子分类] = { name: 子分类, sites: [] };
+    map[分类].children[子分类].sites.push({ name: 名称, url: 网址, desc: 描述, icon: 图标 });
+  }
+  // 转数组
+  return Object.values(map).map(cat => ({
+    name: cat.name,
+    children: Object.values(cat.children)
+  }));
+}
+
+/* ===== 递归树（仅一级箭头） ===== */
+function buildTree(arr, parentKey = '', level = 0) {
   let html = '';
   arr.forEach((node, idx) => {
     const key = parentKey ? `${parentKey}-${idx}` : `${idx}`;
-    const curNames = [...pathNames, node.name];
     const hasSub = node.children && node.children.length;
     const hasSites = node.sites && node.sites.length;
+    const isParent = hasSub || hasSites;
 
     html += `
       <div class="nav-item">
@@ -56,14 +73,15 @@ function buildTree(arr, parentKey = '', pathNames = [], level = 0) {
              data-key="${key}"
              data-name="${node.name}"
              data-container="${hasSub ? 'children' : 'sites'}"
-             ${hasSites ? `data-sites='${JSON.stringify(node.sites)}' data-path="${curNames.join('-')}"` : ''}>
+             ${hasSites ? `data-sites='${JSON.stringify(node.sites)}'` : ''}>
           <span class="nav-icon">📁</span>
           <span>${node.name}</span>
+          ${level === 0 && isParent ? '<span class="nav-arrow">→</span>' : ''}
         </div>`;
 
     if (hasSub) {
       html += `<div class="nav-children" data-parent="${key}">
-                 ${buildTree(node.children, key, curNames, level + 1)}
+                 ${buildTree(node.children, key, level + 1)}
                </div>`;
     }
     html += `</div>`;
@@ -71,45 +89,42 @@ function buildTree(arr, parentKey = '', pathNames = [], level = 0) {
   return html;
 }
 
-/* ===== 右侧列表 ===== */
+/* ===== 右侧卡片 ===== */
 function showSites(title, sites) {
   document.getElementById('subTitle').textContent = title;
   const box = document.getElementById('list');
   if (!sites.length) { box.innerHTML = '<p style="color:#999">暂无站点</p>'; return; }
   box.innerHTML = sites.map(s => `
-    <a class="site-row" href="${s.url}" target="_blank" rel="noopener">
-      <span class="site-icon">${s.icon || '🌐'}</span>
-      <div class="site-info">
-        <div class="site-name">${s.name}</div>
-        <div class="site-desc">${s.desc || ''}</div>
-      </div>
-      <span class="site-url">${s.url}</span>
+    <a class="site-card" href="${s.url}" target="_blank" rel="noopener">
+      <div class="site-icon">${s.icon || '🌐'}</div>
+      <div class="site-name">${s.name}</div>
+      <div class="site-desc">${s.desc || ''}</div>
     </a>`).join('');
 }
 
 /* ===== 入口 ===== */
-fetch('data.json')
-  .then(r => r.json())
-  .then(data => {
-    document.getElementById('side').innerHTML = buildTree(data);
+loadCSV().then(data => {
+  document.getElementById('side').innerHTML = buildTree(data);
 
-    document.getElementById('side').addEventListener('click', e => {
-      const row = e.target.closest('.nav-row');
-      if (!row) return;
+  document.getElementById('side').addEventListener('click', e => {
+    const row = e.target.closest('.nav-row');
+    if (!row) return;
 
-      /* 折叠/展开（点击文件夹名） */
+    /* 一级折叠/展开 */
+    const arrow = row.querySelector('.nav-arrow');
+    if (arrow) {
       const children = row.nextElementSibling;
-      if (children && children.classList.contains('nav-children')) {
-        children.classList.toggle('open');
-      }
+      children?.classList.toggle('open');
+      arrow.classList.toggle('expanded');
+    }
 
-      /* 选中并展示右侧 */
-      document.querySelectorAll('.nav-row').forEach(r => r.classList.remove('active'));
-      row.classList.add('active');
-      const sites = JSON.parse(row.dataset.sites || '[]');
-      showSites(row.dataset.name, sites);
-    });
+    /* 选中并展示右侧 */
+    document.querySelectorAll('.nav-row').forEach(r => r.classList.remove('active'));
+    row.classList.add('active');
+    const sites = JSON.parse(row.dataset.sites || '[]');
+    showSites(row.dataset.name, sites);
   });
+});
 </script>
 </body>
 </html>
